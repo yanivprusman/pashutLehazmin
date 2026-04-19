@@ -62,7 +62,7 @@ export function ShoppingListForm({ onSubmit }: { onSubmit: (text: string) => voi
         onClick={() => setText(DEV_PRESET_LIST)}
         className="dev-only w-full border-2 border-dashed border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-medium py-2 rounded-lg cursor-pointer text-sm"
       >
-        מילוי רשימה לדוגמה (dev)
+        מילוי רשימה לדוגמה
       </button>
 
       <button
