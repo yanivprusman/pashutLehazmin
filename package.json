@@ -1,17 +1,23 @@
 {
-  "name": "tmp-create-pashutlehazmin-1776627049",
+  "name": "pashut-lehazmin",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ingest": "tsx scripts/ingest-feeds.ts"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.81",
+    "fast-xml-parser": "^4.5.0",
+    "iconv-lite": "^0.6.3",
+    "mysql2": "^3.17.2",
     "next": "16.2.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "undici": "^6.25.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -21,6 +27,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }
