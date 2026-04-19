@@ -8,6 +8,8 @@ export interface ParsedItem {
   quantity?: number;
   barcode?: string;
   notes?: string;
+  clarify_needed?: string;
+  clarify_options?: string[];
 }
 
 export interface BasketLine {

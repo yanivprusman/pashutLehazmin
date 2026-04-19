@@ -4,6 +4,7 @@ export interface ParsedItem {
   barcode?: string;
   notes?: string;
   clarify_needed?: string;
+  clarify_options?: string[];
 }
 
 export interface MatchedProduct {

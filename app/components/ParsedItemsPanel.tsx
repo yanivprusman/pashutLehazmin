@@ -19,7 +19,13 @@ export function ParsedItemsPanel({
       if (!it.clarify_needed) return it;
       const answer = answers[i]?.trim();
       if (!answer) return it;
-      return { ...it, query: `${it.query} ${answer}`.trim(), clarify_needed: undefined, notes: answer };
+      return {
+        ...it,
+        query: `${it.query} ${answer}`.trim(),
+        clarify_needed: undefined,
+        clarify_options: undefined,
+        notes: answer,
+      };
     });
   }
 
@@ -33,6 +39,8 @@ export function ParsedItemsPanel({
       <ul className="space-y-3">
         {items.map((it, i) => {
           const qtyLabel = it.quantity && it.quantity > 1 ? ` × ${it.quantity}` : '';
+          const selected = answers[i] ?? '';
+          const options = it.clarify_options ?? [];
           return (
             <li
               key={i}
@@ -48,15 +56,44 @@ export function ParsedItemsPanel({
               {it.clarify_needed && (
                 <div className="mt-2 space-y-2">
                   <p className="text-sm text-gray-700">{it.clarify_needed}</p>
-                  <input
-                    data-id={`clarify-${i}`}
-                    type="text"
-                    value={answers[i] ?? ''}
-                    onChange={e => setAnswers(a => ({ ...a, [i]: e.target.value }))}
-                    placeholder="התשובה שלך…"
-                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:outline-none"
-                    dir="auto"
-                  />
+                  {options.length > 0 ? (
+                    <div className="flex flex-wrap gap-2" data-id={`clarify-options-${i}`}>
+                      {options.map((opt, j) => {
+                        const isSelected = selected === opt;
+                        return (
+                          <button
+                            key={j}
+                            type="button"
+                            data-id={`clarify-${i}-option-${j}`}
+                            onClick={() =>
+                              setAnswers(a => ({
+                                ...a,
+                                [i]: isSelected ? '' : opt,
+                              }))
+                            }
+                            className={
+                              'px-3 py-1 rounded-full border text-sm cursor-pointer transition-colors ' +
+                              (isSelected
+                                ? 'bg-emerald-600 border-emerald-600 text-white'
+                                : 'bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-50')
+                            }
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <input
+                      data-id={`clarify-${i}`}
+                      type="text"
+                      value={selected}
+                      onChange={e => setAnswers(a => ({ ...a, [i]: e.target.value }))}
+                      placeholder="התשובה שלך…"
+                      className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-emerald-500 focus:outline-none"
+                      dir="auto"
+                    />
+                  )}
                 </div>
               )}
             </li>
