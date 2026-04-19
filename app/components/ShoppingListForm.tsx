@@ -8,6 +8,8 @@ const EXAMPLES = [
   'קוטג\' 5%, גבינה צהובה, לחם שחור, אבוקדו, תפוחי אדמה',
 ];
 
+const DEV_PRESET_LIST = 'ביצים, חלב2, יוגורטים, עוף, גבינה צהובה, גבינה לבנה, לחם, נייר טואלט, לימון, פסטה';
+
 export function ShoppingListForm({ onSubmit }: { onSubmit: (text: string) => void }) {
   const [text, setText] = useState('');
 
@@ -53,6 +55,15 @@ export function ShoppingListForm({ onSubmit }: { onSubmit: (text: string) => voi
           </button>
         ))}
       </div>
+
+      <button
+        type="button"
+        data-id="dev-fill-preset"
+        onClick={() => setText(DEV_PRESET_LIST)}
+        className="dev-only w-full border-2 border-dashed border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-medium py-2 rounded-lg cursor-pointer text-sm"
+      >
+        מילוי רשימה לדוגמה (dev)
+      </button>
 
       <button
         type="submit"
