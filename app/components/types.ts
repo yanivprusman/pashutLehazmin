@@ -26,6 +26,14 @@ export interface BasketLine {
   effectiveQty: number;
 }
 
+export interface BelowMinimumInfo {
+  chain: 'shufersal' | 'ramilevi';
+  chainLabel: string;
+  minimum: number;
+  subtotal: number;
+  shortfall: number;
+}
+
 export interface Basket {
   strategy: 'single_cheapest' | 'split_cheapest';
   chain: 'shufersal' | 'ramilevi' | 'mixed';
@@ -33,7 +41,7 @@ export interface Basket {
   itemsTotal: number;
   deliveryFee: number;
   grandTotal: number;
-  belowMinimum: boolean;
+  belowMinimum: BelowMinimumInfo[];
   unmatchedCount: number;
 }
 

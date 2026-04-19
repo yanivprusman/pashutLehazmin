@@ -16,7 +16,10 @@ async function main() {
 
   for (const b of [singleCheapest, splitCheapest]) {
     console.log(`\n=== ${b.strategy} (${b.chain}) ===`);
-    console.log(`items: ${b.itemsTotal}₪  delivery: ${b.deliveryFee}₪  TOTAL: ${b.grandTotal}₪  unmatched: ${b.unmatchedCount}  belowMinimum: ${b.belowMinimum}`);
+    const belowMinSummary = b.belowMinimum.length > 0
+      ? b.belowMinimum.map(i => `${i.chain} short ₪${i.shortfall}`).join(', ')
+      : 'ok';
+    console.log(`items: ${b.itemsTotal}₪  delivery: ${b.deliveryFee}₪  TOTAL: ${b.grandTotal}₪  unmatched: ${b.unmatchedCount}  belowMinimum: ${belowMinSummary}`);
     for (const line of b.lines) {
       const m = line.matched;
       if (m) {

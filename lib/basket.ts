@@ -20,6 +20,14 @@ export interface BasketLine {
   effectiveQty: number;
 }
 
+export interface BelowMinimumInfo {
+  chain: Chain;
+  chainLabel: string;
+  minimum: number;
+  subtotal: number;
+  shortfall: number;
+}
+
 export interface Basket {
   strategy: 'single_cheapest' | 'split_cheapest';
   chain: 'shufersal' | 'ramilevi' | 'mixed';
@@ -27,7 +35,7 @@ export interface Basket {
   itemsTotal: number;
   deliveryFee: number;
   grandTotal: number;
-  belowMinimum: boolean;
+  belowMinimum: BelowMinimumInfo[];
   unmatchedCount: number;
 }
 
@@ -84,12 +92,20 @@ function summarize(
   const itemsTotal = lines.reduce((s, l) => s + l.effectivePrice, 0);
   const chainsInBasket = new Set(lines.filter(l => l.matched).map(l => l.chain));
   let deliveryFee = 0;
-  let belowMinimum = false;
+  const belowMinimum: BelowMinimumInfo[] = [];
   for (const c of chainsInBasket) {
     const meta = CHAIN_META[c];
     const subtotal = lines.filter(l => l.chain === c && l.matched).reduce((s, l) => s + l.effectivePrice, 0);
     deliveryFee += meta.deliveryFee;
-    if (subtotal < meta.deliveryMinimum) belowMinimum = true;
+    if (subtotal < meta.deliveryMinimum) {
+      belowMinimum.push({
+        chain: c,
+        chainLabel: meta.labelHe,
+        minimum: meta.deliveryMinimum,
+        subtotal: Number(subtotal.toFixed(2)),
+        shortfall: Number((meta.deliveryMinimum - subtotal).toFixed(2)),
+      });
+    }
   }
   return {
     strategy,

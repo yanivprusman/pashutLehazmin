@@ -63,10 +63,14 @@ function BasketCard({
         </div>
       </dl>
 
-      {basket.belowMinimum && (
-        <p className="mt-3 text-xs text-amber-700 bg-amber-50 rounded p-2">
-          ⚠ מתחת למינימום למשלוח — ייתכן תעריף גבוה יותר
-        </p>
+      {basket.belowMinimum.length > 0 && (
+        <div className="mt-3 text-xs text-amber-700 bg-amber-50 rounded p-2 space-y-1">
+          {basket.belowMinimum.map(info => (
+            <p key={info.chain}>
+              ⚠ {info.chainLabel}: מתחת למינימום למשלוח (₪{info.minimum.toFixed(2)}) — חסרים עוד ₪{info.shortfall.toFixed(2)}, ייתכן תעריף גבוה יותר
+            </p>
+          ))}
+        </div>
       )}
       {basket.unmatchedCount > 0 && (
         <p className="mt-2 text-xs text-gray-500">
