@@ -34,9 +34,10 @@ export interface BelowMinimumInfo {
   shortfall: number;
 }
 
+export type Chain = 'shufersal' | 'ramilevi';
+
 export interface Basket {
-  strategy: 'single_cheapest' | 'split_cheapest';
-  chain: 'shufersal' | 'ramilevi' | 'mixed';
+  chain: Chain;
   lines: BasketLine[];
   itemsTotal: number;
   deliveryFee: number;
@@ -45,7 +46,4 @@ export interface Basket {
   unmatchedCount: number;
 }
 
-export interface BasketsResponse {
-  singleCheapest: Basket;
-  splitCheapest: Basket;
-}
+export type BasketsResponse = Record<Chain, Basket>;

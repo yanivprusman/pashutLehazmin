@@ -1,49 +1,43 @@
 'use client';
 
-import type { Basket, BasketsResponse } from './types';
+import type { Basket, BasketsResponse, Chain } from './types';
 
-const CHAIN_LABEL: Record<'shufersal' | 'ramilevi' | 'mixed', string> = {
+const CHAIN_LABEL: Record<Chain, string> = {
   shufersal: 'שופרסל דיל',
   ramilevi: 'רמי לוי',
-  mixed: 'שני הרשתות',
 };
 
-const CHAIN_URL: Record<'shufersal' | 'ramilevi', string> = {
+const CHAIN_URL: Record<Chain, string> = {
   shufersal: 'https://www.shufersal.co.il/online/he/A',
   ramilevi: 'https://www.rami-levy.co.il/he',
 };
 
 function BasketCard({
   basket,
-  isRecommended,
+  isCheaper,
+  savings,
   dataId,
 }: {
   basket: Basket;
-  isRecommended: boolean;
+  isCheaper: boolean;
+  savings: number;
   dataId: string;
 }) {
-  const activeTab = basket.strategy === 'single_cheapest' ? 'רשת אחת (הזול ביותר)' : 'פיצול בין רשתות';
   return (
     <article
-      className={`rounded-xl p-5 ${
-        isRecommended
-          ? 'bg-emerald-50 border-2 border-emerald-500 shadow-md'
-          : 'bg-white border border-gray-200'
-      }`}
+      className="rounded-xl p-5 bg-white border border-gray-200"
       data-id={dataId}
-      data-active-tab={isRecommended ? activeTab : undefined}
     >
       <header className="flex items-baseline justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800">
-            {basket.strategy === 'single_cheapest' ? 'רשת אחת' : 'פיצול בין רשתות'}
-          </h3>
-          <p className="text-sm text-gray-600">{CHAIN_LABEL[basket.chain]}</p>
-        </div>
-        {isRecommended && (
-          <span className="inline-flex items-center gap-1 text-emerald-700 text-sm font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            מומלץ
+        <h3 className="text-lg font-semibold text-gray-800">
+          {CHAIN_LABEL[basket.chain]}
+        </h3>
+        {isCheaper && savings > 0.5 && (
+          <span
+            className="inline-flex items-center gap-1 text-emerald-700 text-xs font-medium bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5"
+            data-id="cheaper-badge"
+          >
+            זול יותר ב-₪{savings.toFixed(2)}
           </span>
         )}
       </header>
@@ -59,7 +53,9 @@ function BasketCard({
         </div>
         <div className="flex justify-between font-semibold border-t border-gray-200 pt-1 mt-1">
           <dt>סך הכול</dt>
-          <dd>₪{basket.grandTotal.toFixed(2)}</dd>
+          <dd className={isCheaper && savings > 0.5 ? 'text-emerald-700' : undefined}>
+            ₪{basket.grandTotal.toFixed(2)}
+          </dd>
         </div>
       </dl>
 
@@ -101,25 +97,24 @@ function BasketCard({
         </ul>
       </details>
 
-      {basket.chain !== 'mixed' && (
-        <a
-          href={CHAIN_URL[basket.chain]}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-id={`checkout-${basket.chain}`}
-          className="block mt-4 text-center bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded cursor-pointer transition-colors"
-        >
-          המשך לאתר {CHAIN_LABEL[basket.chain]} ←
-        </a>
-      )}
+      <a
+        href={CHAIN_URL[basket.chain]}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-id={`checkout-${basket.chain}`}
+        className="block mt-4 text-center bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded cursor-pointer transition-colors"
+      >
+        המשך לאתר {CHAIN_LABEL[basket.chain]} ←
+      </a>
     </article>
   );
 }
 
 export function BasketComparison({ baskets, rawText }: { baskets: BasketsResponse; rawText: string }) {
-  const { singleCheapest, splitCheapest } = baskets;
-  const splitSaves = singleCheapest.grandTotal - splitCheapest.grandTotal;
-  const splitIsBetter = splitSaves > 0.5;
+  const { shufersal, ramilevi } = baskets;
+  const diff = shufersal.grandTotal - ramilevi.grandTotal;
+  const ramileviIsCheaper = diff > 0;
+  const savings = Math.abs(diff);
 
   return (
     <section className="space-y-6" data-id="basket-comparison">
@@ -129,15 +124,19 @@ export function BasketComparison({ baskets, rawText }: { baskets: BasketsRespons
       </details>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <BasketCard basket={singleCheapest} isRecommended={!splitIsBetter} dataId="basket-single" />
-        <BasketCard basket={splitCheapest} isRecommended={splitIsBetter} dataId="basket-split" />
+        <BasketCard
+          basket={shufersal}
+          isCheaper={!ramileviIsCheaper}
+          savings={savings}
+          dataId="basket-shufersal"
+        />
+        <BasketCard
+          basket={ramilevi}
+          isCheaper={ramileviIsCheaper}
+          savings={savings}
+          dataId="basket-ramilevi"
+        />
       </div>
-
-      {splitIsBetter && (
-        <p className="text-center text-sm text-emerald-800 bg-emerald-50 rounded p-3" data-id="split-savings">
-          פיצול בין רשתות חוסך ₪{splitSaves.toFixed(2)} אבל דורש 2 משלוחים
-        </p>
-      )}
     </section>
   );
 }

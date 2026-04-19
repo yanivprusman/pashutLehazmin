@@ -12,10 +12,10 @@ async function main() {
     { query: 'בננה', quantity: 1 },
   ];
 
-  const { singleCheapest, splitCheapest } = await computeBaskets(list);
+  const baskets = await computeBaskets(list);
 
-  for (const b of [singleCheapest, splitCheapest]) {
-    console.log(`\n=== ${b.strategy} (${b.chain}) ===`);
+  for (const b of Object.values(baskets)) {
+    console.log(`\n=== ${b.chain} ===`);
     const belowMinSummary = b.belowMinimum.length > 0
       ? b.belowMinimum.map(i => `${i.chain} short ₪${i.shortfall}`).join(', ')
       : 'ok';

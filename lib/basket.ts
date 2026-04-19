@@ -29,8 +29,7 @@ export interface BelowMinimumInfo {
 }
 
 export interface Basket {
-  strategy: 'single_cheapest' | 'split_cheapest';
-  chain: 'shufersal' | 'ramilevi' | 'mixed';
+  chain: Chain;
   lines: BasketLine[];
   itemsTotal: number;
   deliveryFee: number;
@@ -84,31 +83,23 @@ function lineFor(
   };
 }
 
-function summarize(
-  strategy: Basket['strategy'],
-  chain: Basket['chain'],
-  lines: BasketLine[],
-): Basket {
+function summarize(chain: Chain, lines: BasketLine[]): Basket {
   const itemsTotal = lines.reduce((s, l) => s + l.effectivePrice, 0);
-  const chainsInBasket = new Set(lines.filter(l => l.matched).map(l => l.chain));
-  let deliveryFee = 0;
+  const matchedSubtotal = lines.filter(l => l.matched).reduce((s, l) => s + l.effectivePrice, 0);
+  const meta = CHAIN_META[chain];
+  const hasAnyMatched = lines.some(l => l.matched);
+  const deliveryFee = hasAnyMatched ? meta.deliveryFee : 0;
   const belowMinimum: BelowMinimumInfo[] = [];
-  for (const c of chainsInBasket) {
-    const meta = CHAIN_META[c];
-    const subtotal = lines.filter(l => l.chain === c && l.matched).reduce((s, l) => s + l.effectivePrice, 0);
-    deliveryFee += meta.deliveryFee;
-    if (subtotal < meta.deliveryMinimum) {
-      belowMinimum.push({
-        chain: c,
-        chainLabel: meta.labelHe,
-        minimum: meta.deliveryMinimum,
-        subtotal: Number(subtotal.toFixed(2)),
-        shortfall: Number((meta.deliveryMinimum - subtotal).toFixed(2)),
-      });
-    }
+  if (hasAnyMatched && matchedSubtotal < meta.deliveryMinimum) {
+    belowMinimum.push({
+      chain,
+      chainLabel: meta.labelHe,
+      minimum: meta.deliveryMinimum,
+      subtotal: Number(matchedSubtotal.toFixed(2)),
+      shortfall: Number((meta.deliveryMinimum - matchedSubtotal).toFixed(2)),
+    });
   }
   return {
-    strategy,
     chain,
     lines,
     itemsTotal: Number(itemsTotal.toFixed(2)),
@@ -119,43 +110,12 @@ function summarize(
   };
 }
 
-export async function computeBaskets(items: ParsedItem[]): Promise<{
-  singleCheapest: Basket;
-  splitCheapest: Basket;
-}> {
+export async function computeBaskets(items: ParsedItem[]): Promise<Record<Chain, Basket>> {
   const perChain = await bestPerChain(items);
-
-  const chainTotals: Record<Chain, number> = { shufersal: 0, ramilevi: 0 };
+  const result = {} as Record<Chain, Basket>;
   for (const chain of ALL_CHAINS) {
-    chainTotals[chain] = perChain[chain].reduce((s, m, i) => {
-      if (!m) return s;
-      const qty = items[i].quantity ?? 1;
-      return s + m.item_price * qty;
-    }, 0);
+    const lines = items.map((it, i) => lineFor(it, chain, perChain[chain][i]));
+    result[chain] = summarize(chain, lines);
   }
-  const bestSingleChain: Chain = chainTotals.shufersal <= chainTotals.ramilevi ? 'shufersal' : 'ramilevi';
-  const singleLines = items.map((it, i) => lineFor(it, bestSingleChain, perChain[bestSingleChain][i]));
-  const singleCheapest = summarize('single_cheapest', bestSingleChain, singleLines);
-
-  const splitLines: BasketLine[] = items.map((it, i) => {
-    let cheapestChain: Chain = ALL_CHAINS[0];
-    let cheapestMatch: MatchCandidate | null = null;
-    let cheapestPrice = Infinity;
-    for (const chain of ALL_CHAINS) {
-      const m = perChain[chain][i];
-      if (m && m.item_price < cheapestPrice) {
-        cheapestPrice = m.item_price;
-        cheapestMatch = m;
-        cheapestChain = chain;
-      }
-    }
-    return lineFor(it, cheapestChain, cheapestMatch);
-  });
-  const splitChains = new Set(splitLines.filter(l => l.matched).map(l => l.chain));
-  const splitChainLabel: Basket['chain'] = splitChains.size === 1
-    ? ([...splitChains][0] as Chain)
-    : 'mixed';
-  const splitCheapest = summarize('split_cheapest', splitChainLabel, splitLines);
-
-  return { singleCheapest, splitCheapest };
+  return result;
 }
