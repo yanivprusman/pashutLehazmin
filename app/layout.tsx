@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { FeedbackChat } from '@automate/feedback-lib/FeedbackChat';
+import FeedbackChatMount from './FeedbackChatMount';
 
 export const metadata: Metadata = {
   title: "פשוט להזמין",
@@ -16,7 +16,7 @@ export default function RootLayout({
     <html lang="he" dir="rtl">
       <body className="min-h-screen bg-gradient-to-b from-emerald-50 to-white text-gray-900">
         {children}
-        <FeedbackChat issuesPath="/feedback-lib-issues" />
+        <FeedbackChatMount />
       </body>
     </html>
   );
