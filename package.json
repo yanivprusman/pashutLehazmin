@@ -4,13 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "eslint",
     "ingest": "tsx scripts/ingest-feeds.ts"
   },
   "dependencies": {
+    "@addnewfeature/feedback-lib-launcher": "file:../../automateLinux/packages/feedback-lib-launcher",
     "@anthropic-ai/claude-agent-sdk": "^0.2.81",
+    "@claudecontrol/feedback-lib": "file:../../automateLinux/packages/feedback-lib",
     "fast-xml-parser": "^4.5.0",
     "iconv-lite": "^0.6.3",
     "mysql2": "^3.17.2",
