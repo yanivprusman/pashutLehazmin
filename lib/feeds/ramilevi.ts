@@ -2,9 +2,10 @@ import { gunzipSync } from 'node:zlib';
 import { Agent } from 'undici';
 import { decodeBufferToUtf8 } from './decode';
 import { parsePriceFullXml } from './xml-parser';
-import type { NormalizedProduct } from './types';
+import { V0_STORES, type NormalizedProduct } from './types';
 
 const PORTAL = 'https://url.retail.publishedprices.co.il';
+const CHAIN_ID = V0_STORES.ramilevi.chainId;
 
 const insecureDispatcher = new Agent({
   connect: { rejectUnauthorized: false },
@@ -101,7 +102,11 @@ async function listFiles(
     sEcho: '1',
     iColumns: '5',
     iDisplayStart: '0',
-    iDisplayLength: '50',
+    // Must cover every PriceFull the chain publishes in one page: we now filter
+    // by store client-side, so a short page would silently hide our store.
+    // ~300 files across ~95 stores today; 5000 leaves room and still returns
+    // only what the search matched.
+    iDisplayLength: '5000',
     sSearch: search,
     cd: '/',
     csrftoken: token,
@@ -122,6 +127,28 @@ async function listFiles(
   return json.aaData ?? [];
 }
 
+/**
+ * Pull the store id out of a PriceFull filename.
+ *
+ * Two layouts exist in the price-transparency world:
+ *   PriceFull<chain>-<store>-<yyyymmdd>-<hhmmss>              (no subchain)
+ *   PriceFull<chain>-<subchain>-<store>-<yyyymmdd>-<hhmmss>   (Rami Levi)
+ *
+ * Rami Levi publishes the second one — e.g.
+ * PriceFull7290058140886-001-027-20260801-120006.gz — so a needle of
+ * "PriceFull<chain>-<store>-" matches nothing at all. Anchor on the date
+ * segment instead and take whatever precedes it, which reads both layouts and
+ * survives a subchain renumber.
+ */
+export function extractStoreIdFromFilename(fname: string, chainId: string): string | null {
+  const prefix = `PriceFull${chainId}-`;
+  if (!fname.startsWith(prefix)) return null;
+  const segments = fname.slice(prefix.length).replace(/\.(gz|xml)$/i, '').split('-');
+  const dateIndex = segments.findIndex(s => /^20\d{6}$/.test(s));
+  if (dateIndex < 1) return null;
+  return segments[dateIndex - 1].padStart(3, '0');
+}
+
 export async function fetchRamiLeviPriceFull(storeId: string): Promise<{
   products: NormalizedProduct[];
   sourceFilename: string;
@@ -131,10 +158,24 @@ export async function fetchRamiLeviPriceFull(storeId: string): Promise<{
   await login(jar);
   const token = await getCsrfFromFilePage(jar);
 
-  const needle = `PriceFull7290058140886-${paddedStoreId}-`;
-  const entries = await listFiles(jar, token, needle);
+  // Search by chain only, then match the store ourselves — the portal's search
+  // is a plain substring filter and cannot express "store id in either slot".
+  const listing = await listFiles(jar, token, `PriceFull${CHAIN_ID}`);
+  const entries = listing.filter(
+    e => extractStoreIdFromFilename(e.fname, CHAIN_ID) === paddedStoreId,
+  );
   if (entries.length === 0) {
-    throw new Error(`No Rami Levi PriceFull for store ${paddedStoreId}`);
+    const available = [
+      ...new Set(
+        listing
+          .map(e => extractStoreIdFromFilename(e.fname, CHAIN_ID))
+          .filter((s): s is string => s !== null),
+      ),
+    ].sort();
+    throw new Error(
+      `No Rami Levi PriceFull for store ${paddedStoreId} ` +
+        `(${listing.length} files listed; stores available: ${available.join(', ') || 'none'})`,
+    );
   }
   entries.sort((a, b) => (a.time < b.time ? 1 : -1));
   const latest = entries[0];
